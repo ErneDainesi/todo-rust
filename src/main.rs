@@ -1,7 +1,6 @@
-use actix_web::{
-    get, http::header::ContentType, post, web, App, HttpResponse, HttpServer, Responder, Result,
-};
+use actix_web::{get, http::header::ContentType, App, HttpResponse, HttpServer};
 use leptos::*;
+use todo_rust::todo::Todo;
 
 #[get("/")]
 async fn index() -> HttpResponse {
@@ -16,6 +15,9 @@ async fn index() -> HttpResponse {
             </head>
             <body>
                 <h1>Todo!</h1>
+                <section>
+                    <Todo/>
+                </section>
             </body>
         }
     });
