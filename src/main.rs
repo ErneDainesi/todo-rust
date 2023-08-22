@@ -38,11 +38,12 @@ async fn index() -> HttpResponse {
             <head>
                 <meta charset="UTF-8"></meta>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
+                <link rel="stylesheet" href="../static/swagg.css"></link>
                 <script src="https://unpkg.com/htmx.org@1.9.4"></script>
                 <title>todo_rust</title>
             </head>
             <body>
-                <h1>Todo!</h1>
+                <h1 class="page-head">Todo!</h1>
                 <TodosForm/>
                 <TodosList todos = get_example_data() />
             </body>
@@ -78,6 +79,11 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(index)
             .service(add_todo)
+            .service(
+                actix_files::Files::new("/static", "static/")
+                    .use_last_modified(true)
+                    .index_file("swagg.css"),
+            )
             .app_data(web::Data::new(AppState { id_counter: 0 }))
     })
     .bind(("127.0.0.1", 8080))?
