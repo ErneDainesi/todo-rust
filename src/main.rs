@@ -1,37 +1,22 @@
-use actix_web::{
-    get, http::header::ContentType, post, web, App, HttpRequest, HttpResponse, HttpServer,
-};
+use std::sync::{Arc, Mutex};
+use actix_web::{delete, get, http::header::ContentType, post, web, App, HttpResponse, HttpServer};
+use anyhow::Ok;
 use leptos::*;
-use todo_rust::todo::{Todo, TodoItem, TodosForm, TodosList};
+use sqlx::sqlite::SqlitePool;
+use todo_rust::{
+    db::{connect_to_db, get_todos, insert_todo, TodoSchema},
+    todo::{Todo, TodosForm, TodosList},
+};
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-struct FormData {
-    title: String,
-    description: String,
-}
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct AppState {
-    id_counter: usize,
-}
-
-fn get_example_data() -> Vec<TodoItem> {
-    vec![
-        TodoItem {
-            id: 1,
-            title: "Prueba".to_string(),
-            description: "Prueba desc".to_string(),
-        },
-        TodoItem {
-            id: 2,
-            title: "Otra Prueba".to_string(),
-            description: "Otra prueba desc".to_string(),
-        },
-    ]
+    db: Arc<Mutex<SqlitePool>>,
 }
 
 #[get("/")]
-async fn index() -> HttpResponse {
+async fn index(app_data: web::Data<AppState>) -> HttpResponse {
+    let db = app_data.db.lock().unwrap();
+    let todos = get_todos(&db).await.unwrap();
     let html = leptos::ssr::render_to_string(|cx| {
         view! {
             cx,
@@ -45,7 +30,7 @@ async fn index() -> HttpResponse {
             <body>
                 <h1 class="page-head">Todo!</h1>
                 <TodosForm/>
-                <TodosList todos = get_example_data() />
+                <TodosList todos />
             </body>
         }
     });
@@ -55,13 +40,15 @@ async fn index() -> HttpResponse {
 }
 
 #[post("/")]
-async fn add_todo(app_data: web::Data<AppState>, form: web::Form<FormData>) -> HttpResponse {
-    let id = app_data.id_counter + 1; // this doesn't really work, but ill use sql ids later
-    let form_data = TodoItem {
-        id,
+async fn add_todo(app_data: web::Data<AppState>, form: web::Form<TodoSchema>) -> HttpResponse {
+    let form_data = TodoSchema {
         title: form.title.to_owned(),
         description: form.description.to_owned(),
     };
+    let db = app_data.db.lock().unwrap();
+    insert_todo(&db, &form_data.title, &form_data.description)
+        .await
+        .unwrap();
     let html = leptos::ssr::render_to_string(|cx| {
         view! {
             cx,
@@ -73,9 +60,15 @@ async fn add_todo(app_data: web::Data<AppState>, form: web::Form<FormData>) -> H
         .body(html)
 }
 
-#[actix_web::main] // or #[tokio::main]
-async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+#[delete("/")]
+async fn delete_todo() -> HttpResponse {
+    todo!()
+}
+
+#[actix_web::main]
+async fn main() -> anyhow::Result<()> {
+    let db = Arc::new(Mutex::new(connect_to_db().await?));
+    HttpServer::new(move || {
         App::new()
             .service(index)
             .service(add_todo)
@@ -84,9 +77,11 @@ async fn main() -> std::io::Result<()> {
                     .use_last_modified(true)
                     .index_file("swagg.css"),
             )
-            .app_data(web::Data::new(AppState { id_counter: 0 }))
+            .app_data(web::Data::new(AppState { db: db.clone() }))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
+    .unwrap();
+    Ok(())
 }

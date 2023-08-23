@@ -1,14 +1,8 @@
+use crate::db::TodoSchema;
 use leptos::*;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct TodoItem {
-    pub id: usize,
-    pub title: String,
-    pub description: String,
-}
-
 #[component]
-pub fn Todo(cx: Scope, data: TodoItem) -> impl IntoView {
+pub fn Todo(cx: Scope, data: TodoSchema) -> impl IntoView {
     view! {
         cx,
         <div>
@@ -37,15 +31,15 @@ pub fn TodosForm(cx: Scope) -> impl IntoView {
 }
 
 #[component]
-pub fn TodosList(cx: Scope, todos: Vec<TodoItem>) -> impl IntoView {
-    let (todos, _) = create_signal::<Vec<TodoItem>>(cx, todos);
+pub fn TodosList(cx: Scope, todos: Vec<TodoSchema>) -> impl IntoView {
+    let (todos, _) = create_signal::<Vec<TodoSchema>>(cx, todos);
     view! {
         cx,
         <section id="list">
             <For
                 each = move || todos.get()
-                key = |item| item.id
-                view = move |cx, item: TodoItem| {
+                key = |_item| 0 // TODO: add a correct id
+                view = move |cx, item: TodoSchema| {
                     view! {
                         cx,
                         <Todo data = item />
