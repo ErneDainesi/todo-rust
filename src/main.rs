@@ -24,13 +24,13 @@ async fn index(app_data: web::Data<AppState>) -> HttpResponse {
                 <meta charset="UTF-8"></meta>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
                 <link rel="stylesheet" href="../static/swagg.css"></link>
-                <script src="https://unpkg.com/htmx.org@1.9.4"></script>
                 <title>todo_rust</title>
             </head>
             <body>
                 <h1 class="page-head">Todo!</h1>
                 <TodosForm/>
                 <TodosList todos />
+                <script src="https://unpkg.com/htmx.org@1.9.4"></script>
             </body>
         }
     });
