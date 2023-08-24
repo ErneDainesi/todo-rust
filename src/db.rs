@@ -1,3 +1,4 @@
+use actix_web::web;
 use anyhow::Ok;
 use sqlx::{Pool, Sqlite, SqlitePool};
 
@@ -5,6 +6,15 @@ use sqlx::{Pool, Sqlite, SqlitePool};
 pub struct TodoSchema {
     pub title: String,
     pub description: String,
+}
+
+impl TodoSchema {
+    pub fn new(form: web::Form<TodoSchema>) -> Self {
+        TodoSchema {
+            title: form.title.to_owned(),
+            description: form.description.to_owned(),
+        }
+    }
 }
 
 pub async fn connect_to_db() -> anyhow::Result<SqlitePool> {

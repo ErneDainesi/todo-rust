@@ -1,8 +1,8 @@
-use std::sync::{Arc, Mutex};
 use actix_web::{delete, get, http::header::ContentType, post, web, App, HttpResponse, HttpServer};
 use anyhow::Ok;
 use leptos::*;
 use sqlx::sqlite::SqlitePool;
+use std::sync::{Arc, Mutex};
 use todo_rust::{
     db::{connect_to_db, get_todos, insert_todo, TodoSchema},
     todo::{Todo, TodosForm, TodosList},
@@ -41,10 +41,7 @@ async fn index(app_data: web::Data<AppState>) -> HttpResponse {
 
 #[post("/")]
 async fn add_todo(app_data: web::Data<AppState>, form: web::Form<TodoSchema>) -> HttpResponse {
-    let form_data = TodoSchema {
-        title: form.title.to_owned(),
-        description: form.description.to_owned(),
-    };
+    let form_data = TodoSchema::new(form);
     let db = app_data.db.lock().unwrap();
     insert_todo(&db, &form_data.title, &form_data.description)
         .await
