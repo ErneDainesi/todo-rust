@@ -1,10 +1,14 @@
-use actix_web::{delete, get, http::header::ContentType, post, web, App, HttpResponse, HttpServer};
+use actix_web::{
+    delete, get,
+    http::{header::ContentType, StatusCode},
+    post, web, App, HttpResponse, HttpServer,
+};
 use anyhow::Ok;
 use leptos::*;
 use sqlx::sqlite::SqlitePool;
 use std::sync::{Arc, Mutex};
 use todo_rust::{
-    db::{connect_to_db, get_todos, insert_todo, TodoSchema},
+    db::{connect_to_db, get_todos, insert_todo, remove_todo, TodoFormData, TodoSchema},
     todo::{Todo, TodosForm, TodosList},
 };
 
@@ -40,10 +44,9 @@ async fn index(app_data: web::Data<AppState>) -> HttpResponse {
 }
 
 #[post("/")]
-async fn add_todo(app_data: web::Data<AppState>, form: web::Form<TodoSchema>) -> HttpResponse {
-    let form_data = TodoSchema::new(form);
+async fn add_todo(app_data: web::Data<AppState>, form: web::Form<TodoFormData>) -> HttpResponse {
     let db = app_data.db.lock().unwrap();
-    insert_todo(&db, &form_data.title, &form_data.description)
+    let form_data = insert_todo(&db, &form.title, &form.description)
         .await
         .unwrap();
     let html = leptos::ssr::render_to_string(|cx| {
@@ -57,9 +60,13 @@ async fn add_todo(app_data: web::Data<AppState>, form: web::Form<TodoSchema>) ->
         .body(html)
 }
 
-#[delete("/")]
-async fn delete_todo() -> HttpResponse {
-    todo!()
+#[delete("/{id}")]
+async fn delete_todo(app_data: web::Data<AppState>, id: web::Path<i64>) -> HttpResponse {
+    let db = app_data.db.lock().unwrap();
+    remove_todo(&db, *id).await.unwrap();
+    HttpResponse::Ok()
+        .status(StatusCode::OK)
+        .finish()
 }
 
 #[actix_web::main]
@@ -69,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .service(index)
             .service(add_todo)
+            .service(delete_todo)
             .service(
                 actix_files::Files::new("/static", "static/")
                     .use_last_modified(true)
