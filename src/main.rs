@@ -1,14 +1,14 @@
 use actix_web::{
     delete, get,
     http::{header::ContentType, StatusCode},
-    post, web, App, HttpResponse, HttpServer,
+    post, web, App, HttpResponse, HttpServer, patch,
 };
 use anyhow::Ok;
 use leptos::*;
 use sqlx::sqlite::SqlitePool;
 use std::sync::{Arc, Mutex};
 use todo_rust::{
-    db::{connect_to_db, get_todos, insert_todo, remove_todo, TodoFormData, TodoSchema},
+    db::{connect_to_db, get_todos, insert_todo, remove_todo, TodoFormData, set_status, get_todo_by_id},
     todo::{Todo, TodosForm, TodosList},
 };
 
@@ -69,6 +69,23 @@ async fn delete_todo(app_data: web::Data<AppState>, id: web::Path<i64>) -> HttpR
         .finish()
 }
 
+#[patch("/{id}")]
+async fn update_status(app_data: web::Data<AppState>, id: web::Path<i64>) -> HttpResponse {
+    let db = app_data.db.lock().unwrap();
+    let mut todo = get_todo_by_id(&db, *id).await.unwrap();
+    let new_status = set_status(&db, *id, todo.status).await.unwrap();
+    todo.status = new_status;
+    let html = leptos::ssr::render_to_string(|cx| {
+        view! {
+            cx,
+            <Todo data = todo />
+        }
+    });
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}
+
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     let db = Arc::new(Mutex::new(connect_to_db().await?));
@@ -77,6 +94,7 @@ async fn main() -> anyhow::Result<()> {
             .service(index)
             .service(add_todo)
             .service(delete_todo)
+            .service(update_status)
             .service(
                 actix_files::Files::new("/static", "static/")
                     .use_last_modified(true)

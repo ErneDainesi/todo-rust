@@ -5,13 +5,20 @@ use leptos::*;
 pub fn Todo(cx: Scope, data: TodoSchema) -> impl IntoView {
     let id = data.id;
     let item_html_id = format!("item-{id}");
+    let status = if data.status { "todo-item-done" } else { "todo-item" };
     view! {
         cx,
-        <div class="todo-item" id=&item_html_id>
+        <div class=status id=&item_html_id>
             <h3 class="todo-title">{ data.title }</h3>
             <p class="todo-description">{ data.description }</p>
             <div class="todo-actions">
-                <button class="todo-action todo-done" htx-put="/" hx-trigger="click">Done</button>
+                <button
+                    class="todo-action"
+                    hx-patch=format!("/{id}")
+                    hx-trigger="click"
+                    hx-target=format!("#{item_html_id}")
+                    hx-swap="outerHTML"
+                >Done</button>
                 <button
                     class="todo-action todo-delete"
                     hx-delete=format!("/{id}")
