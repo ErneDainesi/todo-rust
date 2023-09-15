@@ -14,7 +14,7 @@ pub fn Todo(cx: Scope, data: TodoSchema) -> impl IntoView {
                 <button class="todo-action todo-done" htx-put="/" hx-trigger="click">Done</button>
                 <button
                     class="todo-action todo-delete"
-                    htx-delete=format!("/{id}")
+                    hx-delete=format!("/{id}")
                     hx-trigger="click"
                     hx-target=format!("#{item_html_id}")
                     hx-swap="outerHTML"
