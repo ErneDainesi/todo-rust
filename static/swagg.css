@@ -18,6 +18,7 @@ body {
     flex-direction: column;
     padding: 2rem 5rem;
     align-items: center;
+    row-gap: 1rem;
 }
 
 .todo-item, .todo-item-done {
@@ -44,4 +45,9 @@ body {
 
 .todo-input {
     margin-right: 1rem;
+}
+
+.todo-actions {
+    display: flex;
+    column-gap: 1rem;
 }
